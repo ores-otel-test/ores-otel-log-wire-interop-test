@@ -35,11 +35,7 @@ jobs:
       - name: Validate exact SHA input
         env:
           SOURCE_SHA: ${{ matrix.ref }}
-        run: |
-          case "$SOURCE_SHA" in
-            [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
-            *) echo "ref must be a full 40-character lowercase commit SHA" >&2; exit 2 ;;
-          esac
+        run: '[[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]'
       - name: Fetch exact source
         env:
           SOURCE_REPOSITORY: ${{ matrix.repository }}
