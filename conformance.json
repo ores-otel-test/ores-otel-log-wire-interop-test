@@ -10,6 +10,10 @@
     "wasm-host",
     "browser-exit"
   ],
+  "exactHeads": {
+    "canonical": "05f14768232b770dfc2bbe03f27b388f5a701c74",
+    "legacy": "05f14768232b770dfc2bbe03f27b388f5a701c74"
+  },
   "language": "nodejs",
   "name": "ores-otel-log-wire-interop-test",
   "runtime": "Cross-language fixture comparator",
@@ -17,7 +21,7 @@
     "ores-otel/ores.otel.log",
     "ORESoftware/next-loggers.ts"
   ],
-  "status": "planned",
+  "status": "created",
   "testCommand": "npm ci && npm test",
   "toolchain": "Node.js and Docker"
 }
