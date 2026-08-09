@@ -1,0 +1,8 @@
+{
+  "name": "ores-otel-log-wire-interop-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test harness/*.mjs"
+  }
+}

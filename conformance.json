@@ -1,4 +1,5 @@
 {
+  "automatic_instrumentation": false,
   "capabilities": [
     "record-schema",
     "api-manifest",
@@ -10,18 +11,18 @@
     "wasm-host",
     "browser-exit"
   ],
-  "exactHeads": {
-    "canonical": "05f14768232b770dfc2bbe03f27b388f5a701c74",
-    "legacy": "05f14768232b770dfc2bbe03f27b388f5a701c74"
+  "exact_heads": {
+    "canonical": "be37556eeeaa77c2fc57feda96239b69cca8e9ac",
+    "legacy": "be37556eeeaa77c2fc57feda96239b69cca8e9ac"
   },
-  "language": "nodejs",
-  "name": "ores-otel-log-wire-interop-test",
-  "runtime": "Cross-language fixture comparator",
+  "language": "wire-interop",
+  "no_monkey_patching": true,
+  "repository": "ores-otel-test/ores-otel-log-wire-interop-test",
+  "runtime": "Cross-language JSON fixture comparator",
+  "schema_version": 1,
   "sources": [
     "ores-otel/ores.otel.log",
     "ORESoftware/next-loggers.ts"
   ],
-  "status": "created",
-  "testCommand": "npm ci && npm test",
-  "toolchain": "Node.js and Docker"
+  "test_command": "npm ci && npm test"
 }
