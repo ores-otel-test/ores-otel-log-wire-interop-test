@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   native:
-    name: nodejs / ${{ matrix.role }}
+    name: wire-interop / ${{ matrix.role }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -24,10 +24,10 @@ jobs:
       matrix:
         include:
           - repository: ores-otel/ores.otel.log
-            ref: 05f14768232b770dfc2bbe03f27b388f5a701c74
+            ref: 0557bdeb05cc2061802d84cb683fc9a136c2ce39
             role: canonical
           - repository: ORESoftware/next-loggers.ts
-            ref: 05f14768232b770dfc2bbe03f27b388f5a701c74
+            ref: 91f69877e54287798c16aa2d61e945445c8a3c80
             role: legacy
     steps:
       - uses: actions/checkout@v7
@@ -56,4 +56,4 @@ jobs:
       - run: npm test
         working-directory: source
       - name: Record exact source
-        run: echo ores-otel-log-wire-interop-test nodejs "${{ matrix.role }}" "${{ matrix.ref }}"
+        run: echo ores-otel-log-wire-interop-test wire-interop "${{ matrix.role }}" "${{ matrix.ref }}"
