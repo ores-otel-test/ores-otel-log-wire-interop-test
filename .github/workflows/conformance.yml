@@ -32,25 +32,20 @@ jobs:
             ref: ${{ inputs.legacy_sha || github.event.client_payload.legacy_sha }}
             role: legacy
     steps:
-      - name: Validate exact SHA input
-        env:
-          SOURCE_SHA: ${{ matrix.ref }}
-        run: '[[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]'
-      - name: Fetch exact source
-        env:
-          SOURCE_REPOSITORY: ${{ matrix.repository }}
-          SOURCE_SHA: ${{ matrix.ref }}
-        run: |
-          git init source
-          git -C source remote add origin "https://github.com/${SOURCE_REPOSITORY}.git"
-          git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
-          test "$(git -C source rev-parse FETCH_HEAD)" = "$SOURCE_SHA"
-          git -C source checkout --detach "$SOURCE_SHA"
-      - name: Install contract validator
-        run: python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
-      - name: Validate canonical contracts
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: source/.github/workflows/contracts.yml
+      - run: python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
+      - run: python scripts/validate-contracts.py
         working-directory: source
-        run: python scripts/validate-contracts.py
       - name: Record tested source
-        run: printf '%s %s
-' '${{ matrix.role }}' '${{ matrix.ref }}'
+        run: printf '%s %s %s %s
+' ores-otel-log-wire-interop-test nodejs "${{ matrix.role }}" "${{ matrix.ref }}"
