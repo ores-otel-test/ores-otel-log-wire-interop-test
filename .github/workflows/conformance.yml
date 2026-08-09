@@ -1,35 +1,33 @@
-name: Exact-head contract conformance
+name: Native exact-head conformance
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      canonical_sha:
-        description: Exact commit SHA in ores-otel/ores.otel.log
-        required: true
-        type: string
-      legacy_sha:
-        description: Exact commit SHA in ORESoftware/next-loggers.ts
-        required: true
-        type: string
   repository_dispatch:
     types: [ores-otel-conformance]
 
 permissions:
   contents: read
 
+concurrency:
+  group: native-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  contracts:
+  native:
+    name: nodejs / ${{ matrix.role }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         include:
           - repository: ores-otel/ores.otel.log
-            ref: ${{ inputs.canonical_sha || github.event.client_payload.canonical_sha }}
+            ref: 05f14768232b770dfc2bbe03f27b388f5a701c74
             role: canonical
           - repository: ORESoftware/next-loggers.ts
-            ref: ${{ inputs.legacy_sha || github.event.client_payload.legacy_sha }}
+            ref: 05f14768232b770dfc2bbe03f27b388f5a701c74
             role: legacy
     steps:
       - uses: actions/checkout@v7
@@ -41,11 +39,22 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-          cache: pip
-          cache-dependency-path: source/.github/workflows/contracts.yml
-      - run: python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
-      - run: python scripts/validate-contracts.py
+      - name: Validate shared JSON Schema and SDK API manifests
         working-directory: source
-      - name: Record tested source
+        run: |
+          python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
+          python scripts/validate-contracts.py
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+        working-directory: source
+      - run: npm run typecheck
+        working-directory: source
+      - run: npm test
+        working-directory: source
+      - name: Record exact source
         run: printf '%s %s %s %s
 ' ores-otel-log-wire-interop-test nodejs "${{ matrix.role }}" "${{ matrix.ref }}"
