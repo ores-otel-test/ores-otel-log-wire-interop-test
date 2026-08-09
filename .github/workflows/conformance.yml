@@ -56,5 +56,4 @@ jobs:
       - run: npm test
         working-directory: source
       - name: Record exact source
-        run: printf '%s %s %s %s
-' ores-otel-log-wire-interop-test nodejs "${{ matrix.role }}" "${{ matrix.ref }}"
+        run: echo ores-otel-log-wire-interop-test nodejs "${{ matrix.role }}" "${{ matrix.ref }}"
