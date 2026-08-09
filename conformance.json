@@ -1,0 +1,15 @@
+{
+  "language": "nodejs",
+  "matrixVersion": "ores.otel.test-repository/v1",
+  "name": "ores-otel-log-wire-interop-test",
+  "requireExactHeadChecks": true,
+  "requireNoMonkeyPatching": true,
+  "runtime": "Cross-language fixture comparator",
+  "sources": [
+    "ores-otel/ores.otel.log",
+    "ORESoftware/next-loggers.ts"
+  ],
+  "status": "seeded",
+  "testCommand": "npm ci && npm test",
+  "toolchain": "Node.js and Docker"
+}
