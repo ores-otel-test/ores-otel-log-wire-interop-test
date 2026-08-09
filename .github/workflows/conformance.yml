@@ -1,0 +1,60 @@
+name: Exact-head contract conformance
+
+on:
+  workflow_dispatch:
+    inputs:
+      canonical_sha:
+        description: Exact commit SHA in ores-otel/ores.otel.log
+        required: true
+        type: string
+      legacy_sha:
+        description: Exact commit SHA in ORESoftware/next-loggers.ts
+        required: true
+        type: string
+  repository_dispatch:
+    types: [ores-otel-conformance]
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repository: ores-otel/ores.otel.log
+            ref: ${{ inputs.canonical_sha || github.event.client_payload.canonical_sha }}
+            role: canonical
+          - repository: ORESoftware/next-loggers.ts
+            ref: ${{ inputs.legacy_sha || github.event.client_payload.legacy_sha }}
+            role: legacy
+    steps:
+      - name: Validate exact SHA input
+        env:
+          SOURCE_SHA: ${{ matrix.ref }}
+        run: |
+          case "$SOURCE_SHA" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+            *) echo "ref must be a full 40-character lowercase commit SHA" >&2; exit 2 ;;
+          esac
+      - name: Fetch exact source
+        env:
+          SOURCE_REPOSITORY: ${{ matrix.repository }}
+          SOURCE_SHA: ${{ matrix.ref }}
+        run: |
+          git init source
+          git -C source remote add origin "https://github.com/${SOURCE_REPOSITORY}.git"
+          git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
+          test "$(git -C source rev-parse FETCH_HEAD)" = "$SOURCE_SHA"
+          git -C source checkout --detach "$SOURCE_SHA"
+      - name: Install contract validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
+      - name: Validate canonical contracts
+        working-directory: source
+        run: python scripts/validate-contracts.py
+      - name: Record tested source
+        run: printf '%s %s
+' '${{ matrix.role }}' '${{ matrix.ref }}'
