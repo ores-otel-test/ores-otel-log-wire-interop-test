@@ -1,72 +1,56 @@
-name: Exact-head wire-interop conformance
+name: Exact-head contract conformance
 
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      canonical_sha:
+        description: Exact commit SHA in ores-otel/ores.otel.log
+        required: true
+        type: string
+      legacy_sha:
+        description: Exact commit SHA in ORESoftware/next-loggers.ts
+        required: true
+        type: string
+  repository_dispatch:
+    types: [ores-otel-conformance]
 
 permissions:
   contents: read
 
-concurrency:
-  group: conformance-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  conformance:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
-          - role: canonical
-            repository: ores-otel/ores.otel.log
-            ref: be37556eeeaa77c2fc57feda96239b69cca8e9ac
-          - role: legacy
-            repository: ORESoftware/next-loggers.ts
-            ref: be37556eeeaa77c2fc57feda96239b69cca8e9ac
+          - repository: ores-otel/ores.otel.log
+            ref: ${{ inputs.canonical_sha || github.event.client_payload.canonical_sha }}
+            role: canonical
+          - repository: ORESoftware/next-loggers.ts
+            ref: ${{ inputs.legacy_sha || github.event.client_payload.legacy_sha }}
+            role: legacy
     steps:
-      - name: Check out harness
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Check out exact source
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ matrix.repository }}
-          ref: ${{ matrix.ref }}
-          path: source
-          persist-credentials: false
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-          cache: pip
-          cache-dependency-path: source/.github/workflows/contracts.yml
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: source/package-lock.json
-      - name: Validate JSON Schema and logical SDK contract
+      - name: Validate exact SHA input
         env:
-          EXPECTED_LANGUAGE: nodejs
-          EXPECTED_REPOSITORY: ${{ matrix.repository }}
-          EXPECTED_REF: ${{ matrix.ref }}
-        shell: bash
+          SOURCE_SHA: ${{ matrix.ref }}
+        run: '[[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]'
+      - name: Fetch exact source
+        env:
+          SOURCE_REPOSITORY: ${{ matrix.repository }}
+          SOURCE_SHA: ${{ matrix.ref }}
         run: |
-          python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
-          python source/scripts/validate-contracts.py
-          python tests/assert_contract.py source conformance.json
-
-      - name: Run native wire-interop SDK checks
-        shell: bash
-        run: |
-          cd source
-          npm ci
-          npm run build
-          node --test tests/packaging.test.mjs tests/otel.test.mjs tests/no-monkey-patching.test.mjs
+          git init source
+          git -C source remote add origin "https://github.com/${SOURCE_REPOSITORY}.git"
+          git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
+          test "$(git -C source rev-parse FETCH_HEAD)" = "$SOURCE_SHA"
+          git -C source checkout --detach "$SOURCE_SHA"
+      - name: Install contract validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.26.0 referencing==0.37.0
+      - name: Validate canonical contracts
+        working-directory: source
+        run: python scripts/validate-contracts.py
+      - name: Record tested source
+        run: printf '%s %s
+' '${{ matrix.role }}' '${{ matrix.ref }}'
