@@ -52,5 +52,4 @@ jobs:
         working-directory: source
         run: python scripts/validate-contracts.py
       - name: Record tested source
-        run: printf '%s %s
-' '${{ matrix.role }}' '${{ matrix.ref }}'
+        run: printf '%s %s\\n' '${{ matrix.role }}' '${{ matrix.ref }}'
