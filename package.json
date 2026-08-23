@@ -3,6 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test harness/*.mjs"
+    "test": "node --test harness/*.mjs",
+    "lint:ores": "if [ -f .ores-lint/lint.sh ]; then sh .ores-lint/lint.sh; else echo 'ores-lint not installed'; fi",
+    "prepublishOnly": "npm run lint:ores"
+  },
+  "devDependencies": {
+    "eslint": "10.7.0"
   }
 }
