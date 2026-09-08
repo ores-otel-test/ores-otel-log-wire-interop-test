@@ -9,5 +9,13 @@
   },
   "devDependencies": {
     "eslint": "10.7.0"
+  },
+  "oresLint": {
+    "note": "Declared, not installed. ores-lint resolves these from a global install - see .ores-lint/README.md",
+    "requires": {
+      "eslint": "10.10.0",
+      "typescript-eslint": "8.70.0 (optional; without it .ts files are skipped)"
+    },
+    "install": "npm install --global --ignore-scripts eslint@10.10.0 typescript-eslint@8.70.0"
   }
 }
