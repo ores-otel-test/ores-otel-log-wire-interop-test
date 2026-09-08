@@ -388,7 +388,11 @@ export function analyzeSource(source, language) {
       const assignName = precedingAssignment(tokens, rootIndex);
       const finding = { line: chain.line, col: tokens[rootIndex].col, message: 'logging chain never calls send()' };
       const prev = tokens[rootIndex - 1]?.type;
+      const awaitedLegacyEmit = language === 'dart'
+        && tokens[rootIndex - 1]?.type === 'ident'
+        && tokens[rootIndex - 1]?.value === 'await';
       if (assignName) mark(assignName, finding);
+      else if (awaitedLegacyEmit) { /* legacy Dart emit methods deliver their Future directly */ }
       else if (isReturnish(tokens, rootIndex) || prev === 'lparen' || prev === 'comma') { /* handoff */ }
       else if (language === 'rust' && !nextNonChainIsSemi(tokens, chain.end)) { /* rust tail expression / return */ }
       else report(finding);

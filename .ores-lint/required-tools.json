@@ -2,14 +2,14 @@
   "_comment": "Tool versions ores-lint expects. These are DECLARATIONS, not dependencies - nothing here is ever installed into a repo's node_modules. Install them once, globally. The rollout script mirrors this block into each package.json under the `oresLint` key so the requirement travels with the repo.",
   "eslint": {
     "minMajor": 9,
-    "range": ">=9",
-    "install": "npm i -g eslint",
+    "range": "10.10.0",
+    "install": "npm install --global --ignore-scripts eslint@10.10.0",
     "why": "flat config (eslint.config.mjs) requires ESLint 9 or newer"
   },
   "typescript-eslint": {
     "minMajor": 8,
-    "range": ">=8",
-    "install": "npm i -g typescript-eslint",
+    "range": "8.70.0",
+    "install": "npm install --global --ignore-scripts typescript-eslint@8.70.0",
     "why": "optional; without it .ts/.tsx files are skipped rather than linted"
   },
   "clippy": {

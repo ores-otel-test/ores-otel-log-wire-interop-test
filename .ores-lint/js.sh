@@ -7,7 +7,7 @@
 #
 #   1. a local node_modules/.bin/eslint, walking up for monorepos
 #      (respected if a repo genuinely pins its own)
-#   2. eslint on PATH  (npm i -g eslint)
+#   2. eslint on PATH  (npm install --global --ignore-scripts eslint@10.10.0)
 #   3. the global npm root
 #
 # If none is found this prints an actionable skip and exits 0.
@@ -44,7 +44,7 @@ elif [ -n "$GLOBAL_ROOT" ] && [ -x "$GLOBAL_ROOT/.bin/eslint" ]; then
   ESLINT="$GLOBAL_ROOT/.bin/eslint"; ESLINT_KIND="global"
 else
   echo "ores-lint[js]: no eslint found - skipping"
-  echo "               install it once, globally:  npm i -g eslint"
+  echo "               install it once, globally:  npm install --global --ignore-scripts eslint@10.10.0"
   echo "               (ores-lint never adds eslint to a repo's node_modules)"
   exit 0
 fi
@@ -57,7 +57,7 @@ case "$MAJOR" in
   *)
     if [ "$MAJOR" -lt "${ORES_LINT_ESLINT_MIN_MAJOR}" ]; then
       echo "ores-lint[js]: found eslint $VER ($ESLINT_KIND) but flat config needs >=${ORES_LINT_ESLINT_MIN_MAJOR} - skipping"
-      echo "               upgrade with:  npm i -g eslint@latest"
+      echo "               upgrade with:  npm install --global --ignore-scripts eslint@10.10.0"
       exit 0
     fi
     ;;
@@ -87,7 +87,7 @@ if [ -f "$ROOT/tsconfig.json" ] || ls "$ROOT"/src/*.ts >/dev/null 2>&1; then
     process.exit(1);
   " 2>/dev/null; then
     echo "ores-lint[js]: NOTE - this repo has TypeScript but no typescript-eslint parser;"
-    echo "               .ts/.tsx files are being SKIPPED. Fix with: npm i -g typescript-eslint"
+    echo "               .ts/.tsx files are being SKIPPED. Fix with: npm install --global --ignore-scripts typescript-eslint@8.70.0"
   fi
 fi
 

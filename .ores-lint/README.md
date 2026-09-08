@@ -179,9 +179,10 @@ reported as an actionable skip, not an error.
 Repo-specific ESLint config that already existed is never overwritten.
 The same is true of `analysis_options.yaml`.
 
-CI follows the same model: the workflow runs `npm i -g eslint typescript-eslint`
-and never runs `npm install` for the repo itself, so linting a PR does not
-require the repo's dependency tree to resolve.
+CI follows the same model: the workflow installs the audited, exact global
+versions `eslint@10.10.0` and `typescript-eslint@8.70.0` with lifecycle
+scripts disabled. It never installs the repo's dependency tree merely to lint
+a PR.
 
 ## Per-repo customisation
 

@@ -13,9 +13,9 @@
   "oresLint": {
     "note": "Declared, not installed. ores-lint resolves these from a global install - see .ores-lint/README.md",
     "requires": {
-      "eslint": ">=9",
-      "typescript-eslint": ">=8 (optional; without it .ts files are skipped)"
+      "eslint": "10.10.0",
+      "typescript-eslint": "8.70.0 (optional; without it .ts files are skipped)"
     },
-    "install": "npm i -g eslint typescript-eslint"
+    "install": "npm install --global --ignore-scripts eslint@10.10.0 typescript-eslint@8.70.0"
   }
 }

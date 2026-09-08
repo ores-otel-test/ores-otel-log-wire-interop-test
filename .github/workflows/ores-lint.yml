@@ -8,9 +8,11 @@ on:
 
 jobs:
   lint:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Detect project types
         id: detect
@@ -26,7 +28,7 @@ jobs:
 
       # Node is the runner for ESLint and for the cross-language require-send
       # scanner, so it is installed whenever any supported language is present.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         if: steps.detect.outputs.js == 'true' || steps.detect.outputs.rs == 'true' || steps.detect.outputs.dart == 'true' || steps.detect.outputs.gleam == 'true'
         with:
           node-version: '22'
@@ -35,17 +37,28 @@ jobs:
       # runs `npm install` and never needs the repo's node_modules.
       - name: Install eslint globally
         if: steps.detect.outputs.js == 'true'
-        run: npm i -g eslint typescript-eslint
+        run: npm install --global --ignore-scripts eslint@10.10.0 typescript-eslint@8.70.0
 
-      - name: Install clippy
+      - name: Install pinned Rust toolchain and Clippy
         if: steps.detect.outputs.rs == 'true'
-        run: rustup component add clippy || true
+        uses: dtolnay/rust-toolchain@4360b5dd1f1b8044c7f4af9a6bdfa3c97c619a7c
+        with:
+          toolchain: 1.88.0
+          components: clippy
 
-      # Dart/Gleam SDKs are optional. When absent, dart.sh / gleam.sh skip
-      # with an actionable message; require-send.mjs still runs via Node.
-      - uses: dart-lang/setup-dart@v1
+      # Language hosts are provisioned from immutable action revisions so the
+      # CI result cannot silently degrade into a skipped language pass.
+      - uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         if: steps.detect.outputs.dart == 'true'
-        continue-on-error: true
+
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        if: steps.detect.outputs.gleam == 'true'
+        with:
+          otp-version: false
+          gleam-version: '1.18.1'
+
+      - name: Verify ores-lint assumptions
+        run: sh .ores-lint/selftest.sh
 
       - name: Run ores-lint
         run: sh .ores-lint/lint.sh
