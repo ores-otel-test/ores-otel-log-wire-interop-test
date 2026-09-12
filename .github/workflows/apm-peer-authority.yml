@@ -1,0 +1,137 @@
+name: APM peer-authority canary
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/apm-peer-authority.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/apm-peer-authority.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apm-peer-authority-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  APM_AUTHORITY_REVISION: 942428dc36face4fb50eaac433e6219db648748a
+  TJSV_REVISION: 4a5d049218adc2740d4cf78f612caf7f38f6f64c
+
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out exact canary revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact canary revision
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Check out immutable ORES APM authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ores-otel/ores-interfaces
+          ref: ${{ env.APM_AUTHORITY_REVISION }}
+          path: authority
+          persist-credentials: false
+      - name: Verify both independent authored authorities and fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C authority rev-parse HEAD)" = "$APM_AUTHORITY_REVISION"
+          test -s authority/contracts/ores-apm/v1/ores-apm.tsp
+          test -s authority/contracts/ores-apm/v1/ores-apm.schema.json
+          test -s authority/contracts/ores-apm/v1/example.snapshot.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          schema = json.loads(Path('authority/contracts/ores-apm/v1/ores-apm.schema.json').read_text())
+          fixture = json.loads(Path('authority/contracts/ores-apm/v1/example.snapshot.json').read_text())
+          assert schema['$schema'] == 'https://json-schema.org/draft/2020-12/schema'
+          assert 'ApmSnapshot' in schema['$defs']
+          assert fixture['schema_version'] == 1
+          PY
+      - name: Compile TypeSpec to Schema B and compare with authored Schema A
+        uses: ORESoftware/typespec-json-schema-validator@4a5d049218adc2740d4cf78f612caf7f38f6f64c
+        with:
+          typespec: authority/contracts/ores-apm/v1/ores-apm.tsp
+          schema: authority/contracts/ores-apm/v1/ores-apm.schema.json
+          report: .canary-evidence/positive-report.json
+          contract_ir: .canary-evidence/positive-contract-ir.json
+          output_dir: .canary-evidence/generated
+          max_probes: "64"
+          int64_strategy: string
+          seal_object_schemas: "true"
+          polymorphic_models_strategy: oneOf
+      - name: Verify parity receipt semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('.canary-evidence/positive-report.json').read_text())
+          raw = json.dumps(report, sort_keys=True).lower()
+          assert 'passed' in raw
+          assert 'comparison' in raw or 'generated' in raw
+          assert 'differential' in raw or 'probe' in raw
+          PY
+          test -s .canary-evidence/generated/typespec.generated.schema.json
+      - name: Check out immutable TJSV implementation for negative control
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ORESoftware/typespec-json-schema-validator
+          ref: ${{ env.TJSV_REVISION }}
+          path: .tools/tjsv
+          persist-credentials: false
+      - name: Install pinned TJSV toolchain
+        shell: bash
+        working-directory: .tools/tjsv
+        run: npm ci --omit=dev
+      - name: Require one-sided authored JSON Schema drift to fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/apm-drift"
+          cp authority/contracts/ores-apm/v1/ores-apm.schema.json "$RUNNER_TEMP/apm-drift/authored.schema.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ['RUNNER_TEMP']) / 'apm-drift' / 'authored.schema.json'
+          doc = json.loads(p.read_text())
+          doc['$defs']['ApmSnapshot']['properties']['schema_version']['maximum'] = 2
+          p.write_text(json.dumps(doc, separators=(',', ':')) + '\n')
+          PY
+          set +e
+          node .tools/tjsv/bin/typespec-json-schema-validator.mjs check \
+            --typespec=authority/contracts/ores-apm/v1/ores-apm.tsp \
+            --schema="$RUNNER_TEMP/apm-drift/authored.schema.json" \
+            --report="$RUNNER_TEMP/apm-drift/report.json" \
+            --output-dir="$RUNNER_TEMP/apm-drift/generated" \
+            --max-probes=32 \
+            --int64-strategy=string \
+            --seal-object-schemas=true \
+            --polymorphic-models-strategy=oneOf \
+            >"$RUNNER_TEMP/apm-drift/stdout.txt" 2>"$RUNNER_TEMP/apm-drift/stderr.txt"
+          status=$?
+          set -e
+          test "$status" -ne 0
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads((Path(os.environ['RUNNER_TEMP']) / 'apm-drift' / 'report.json').read_text())
+          raw = json.dumps(report, sort_keys=True).lower()
+          assert 'passed' not in raw or 'stopped' in raw or 'mismatch' in raw or 'diverg' in raw
+          PY
+      - name: Prove source checkout is unchanged
+        shell: bash
+        run: test -z "$(git status --porcelain=v1 --untracked-files=no)"
