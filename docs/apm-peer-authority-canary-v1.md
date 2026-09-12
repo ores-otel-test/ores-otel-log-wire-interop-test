@@ -1,0 +1,1 @@
+Review the exact peer-authority canary in `.github/workflows/apm-peer-authority.yml` and `apm-authority.lock.json`. This file is documentation only and does not define telemetry authority.
