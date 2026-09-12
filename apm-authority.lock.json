@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "authority": {
+    "repository": "ores-otel/ores-interfaces",
+    "revision": "942428dc36face4fb50eaac433e6219db648748a",
+    "typespec": "contracts/ores-apm/v1/ores-apm.tsp",
+    "jsonSchema": "contracts/ores-apm/v1/ores-apm.schema.json",
+    "fixture": "contracts/ores-apm/v1/example.snapshot.json"
+  },
+  "validator": {
+    "repository": "ORESoftware/typespec-json-schema-validator",
+    "revision": "4a5d049218adc2740d4cf78f612caf7f38f6f64c",
+    "int64Strategy": "string",
+    "generatedRole": "comparison-evidence-only",
+    "precedence": "none"
+  }
+}
