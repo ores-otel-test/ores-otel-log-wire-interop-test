@@ -1,0 +1,20 @@
+// AttoLang pure log admission policy, not a transport or runtime shim.
+// Requires compiler-backed guest receipts before being called supported.
+define module wire_log_policy as
+  pub fnc bounded(int used_bytes, int incoming_bytes, int byte_budget): bool {
+    if used_bytes < 0 || incoming_bytes <= 0 || byte_budget <= 0; then
+      return false;
+    fi
+    if incoming_bytes > byte_budget; then return false; fi
+    return used_bytes <= byte_budget - incoming_bytes;
+  }
+
+  pub fnc valid_severity(int severity): bool {
+    return severity == 1 || severity == 2 || severity == 3;
+  }
+
+  pub fnc can_retry(int status, bool idempotent): bool {
+    if !idempotent; then return false; fi
+    return status == 429 || status == 503;
+  }
+end
