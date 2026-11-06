@@ -1,0 +1,13 @@
+// Source-stage AttoLang log transport admission, no I/O authority.
+define module log_admission as
+  pub fnc within_budget(int used, int incoming, int budget): bool {
+    if used < 0 || incoming <= 0 || budget <= 0; then return false; fi
+    if incoming > budget; then return false; fi
+    return used <= budget - incoming;
+  }
+
+  pub fnc retryable(int status, bool idempotent): bool {
+    if !idempotent; then return false; fi
+    return status == 429 || status == 503;
+  }
+end
