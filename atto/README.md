@@ -1,0 +1,1 @@
+Native AttoLang log admission predicates; source-stage only. HTTP loopback tests exercise fixture servers, not the canonical or legacy logger. Exact SHA source conformance and backend guest execution remain independent requirements.

@@ -1,0 +1,29 @@
+name: wire-fixture-e2e
+on:
+  pull_request:
+    paths: ['harness/**', 'atto/**', '.github/workflows/wire-fixture-e2e.yml']
+  push:
+    branches: [main]
+    paths: ['harness/**', 'atto/**', '.github/workflows/wire-fixture-e2e.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  http:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.EXPECTED_SHA }}
+          persist-credentials: false
+      - name: Exact source
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.16.0'
+          package-manager-cache: false
+      - name: Exercise socket paths
+        run: node --test harness/*.mjs
